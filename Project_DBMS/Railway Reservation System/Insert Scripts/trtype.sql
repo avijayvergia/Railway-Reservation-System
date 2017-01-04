@@ -1,0 +1,18 @@
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('EXP', 'MAIL/EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('RAJ', 'RAJDHANI EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('DRNT', 'DURANTO EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('GRB', 'GARIB RATH', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('JSHTB', 'JAN SHATABDI EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('SHTB', 'SHATABDI EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('PASS', 'PASSANGER', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('MEMU', 'MEMU', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('DEMU', 'DEMU', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('EMU', 'EMU', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('SPCL', 'SPECIAL', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('SUV', 'SUVIDHA EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('DD', 'DUBLE DECKER', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('SMPK', 'SAMPARK KRANTI EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('SF', 'SUPERFAST EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('ACSF', 'AC SUPERFAST EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('ACEXP', 'AC MAIL/EXPRESS', 1);
+INSERT INTO railway_reservation_system.trtype (traintype, typename, fare) VALUES ('HSFR', 'HUMSAFAR EXPRESS', 1);

@@ -1,0 +1,15 @@
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (1, 'WHAT IS YOUR NICK NAME AT HOME?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (2, 'WHICH IS YOUR FAVOURITE COLOR?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (3, 'WHAT IS YOUR FAVOURITE CHOCOLATE?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (4, 'WHO IS YOUR FAVOURITE CRICKETER?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (5, 'WHO IS YOUR FAVOURITE ACTRESS?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (6, 'WHO IS YOUR FAVOURITE ACTOR?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (7, 'WHAT IS YOUR PET"S NAME?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (8, 'WHOM WILL YOU KILL IF YOU GET A CHANCE?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (9, 'WHICH TOOTHPASTE DO YOU USE?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (10, 'WHAT IS YOUR PRIMARY SCHOOL NAME?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (11, 'WHAT IS YOUR MATERNAL SURNAME?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (12, 'WHAT IS YOUR FAVOURITE FLAVOR?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (13, 'WHICH VEGETABLE DID YOU EAT YESTERDAY?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (14, 'WHICH SMARTPHONE ARE YOU USING?');
+INSERT INTO railway_reservation_system.secquestions (qno, question) VALUES (15, 'WHICH APP DO YOU HATE THE MOST?');

@@ -1,0 +1,9 @@
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('2S', 50, 29);
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('SL', 200, 120);
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('CC', 150, 205);
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('A3', 300, 428);
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('FC', 100, 230);
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('A2', 300, 613);
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('A1', 300, 1047);
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('EX', 0, 0);
+INSERT INTO railway_reservation_system.basefare (coachcode, mdistance, bfare) VALUES ('UR', 0, 0);

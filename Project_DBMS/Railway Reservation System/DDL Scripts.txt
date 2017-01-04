@@ -1,0 +1,164 @@
+CREATE TABLE account
+(
+    userid VARCHAR(30) PRIMARY KEY NOT NULL,
+    userpassword VARCHAR(25) NOT NULL,
+    administrator BOOL DEFAULT false NOT NULL,
+    secqno INT,
+    answer VARCHAR(100) NOT NULL
+);
+CREATE TABLE basefare
+(
+    coachcode VARCHAR PRIMARY KEY NOT NULL,
+    mdistance INT,
+    bfare INT
+);
+CREATE TABLE coach
+(
+    coachcode VARCHAR PRIMARY KEY NOT NULL,
+    coachname VARCHAR(20) NOT NULL,
+    capacity INT NOT NULL,
+    fare NUMERIC(4, 2) NOT NULL,
+    reservationchrg INT NOT NULL,
+    superfastchrg INT NOT NULL
+);
+CREATE TABLE ruser
+(
+    userid VARCHAR(30),
+    name VARCHAR(60) NOT NULL,
+    dob DATE NOT NULL,
+    gender VARCHAR NOT NULL,
+    id_type VARCHAR NOT NULL,
+    id_no VARCHAR(15) NOT NULL,
+    mobile CHAR(10) NOT NULL,
+    address VARCHAR(100) NOT NULL
+);
+CREATE TABLE secquestions
+(
+    qno INT PRIMARY KEY NOT NULL,
+    question VARCHAR(150) NOT NULL
+);
+CREATE TABLE station
+(
+    stid VARCHAR(4) PRIMARY KEY NOT NULL,
+    stname VARCHAR(30) NOT NULL,
+    pf INT NOT NULL,
+    address VARCHAR(150) NOT NULL
+);
+CREATE TABLE stfeedback
+(
+    userid VARCHAR(30) NOT NULL,
+    stid VARCHAR(4) NOT NULL,
+    cleanliness INT,
+    escalators INT,
+    transportation INT,
+    railfanning INT,
+    safety INT,
+    lodging INT,
+    comnt VARCHAR,
+    CONSTRAINT stfeedback_pkey PRIMARY KEY (userid, stid)
+);
+CREATE TABLE tickets
+(
+    pnr CHAR(10) PRIMARY KEY NOT NULL,
+    userid VARCHAR(30) NOT NULL,
+    trainno VARCHAR(6) NOT NULL,
+    sourcest VARCHAR(4) NOT NULL,
+    destinationst VARCHAR(4) NOT NULL,
+    jdate DATE NOT NULL,
+    reservationdate DATE NOT NULL,
+    coach VARCHAR NOT NULL,
+    total INT NOT NULL,
+    status VARCHAR(7),
+    time_stamp TIMESTAMP DEFAULT now(),
+    CONSTRAINT tickets_userid_fkey FOREIGN KEY (userid) REFERENCES ,
+    CONSTRAINT tickets_trainno_fkey FOREIGN KEY (trainno) REFERENCES train (trainno),
+    CONSTRAINT tickets_sourcest_fkey FOREIGN KEY (sourcest) REFERENCES station (stid),
+    CONSTRAINT tickets_destinationst_fkey FOREIGN KEY (destinationst) REFERENCES station (stid),
+    CONSTRAINT tickets_coach_fkey FOREIGN KEY (coach) REFERENCES coach (coachcode)
+)
+CREATE TABLE train
+(
+    trainno VARCHAR(7) PRIMARY KEY NOT NULL,
+    trainname VARCHAR(50) NOT NULL,
+    source VARCHAR(4) NOT NULL,
+    destination VARCHAR(4) NOT NULL,
+    traintype VARCHAR NOT NULL,
+    rzone VARCHAR(4) NOT NULL,
+    food BOOL DEFAULT false NOT NULL,
+    freq FREQUENCY NOT NULL,
+    ur INT DEFAULT 0 NOT NULL,
+    ex INT DEFAULT 0 NOT NULL,
+    s2 INT DEFAULT 0 NOT NULL,
+    fc INT DEFAULT 0 NOT NULL,
+    sl INT DEFAULT 0 NOT NULL,
+    a3 INT DEFAULT 0 NOT NULL,
+    a2 INT DEFAULT 0 NOT NULL,
+    a1 INT DEFAULT 0 NOT NULL,
+    cc INT DEFAULT 0 NOT NULL
+);
+CREATE TABLE trainstops
+(
+    trainno VARCHAR(6) NOT NULL,
+    stid VARCHAR(4) NOT NULL,
+    arrtime TIME NOT NULL,
+    deptime TIME NOT NULL,
+    pf INT,
+    jday INT,
+    distance NUMERIC(7, 2) NOT NULL,
+    CONSTRAINT trainstops_pkey PRIMARY KEY (trainno, stid)
+);
+CREATE TABLE travelers
+(
+    pnr CHAR(10) NOT NULL,
+    uid CHAR(12),
+    tname VARCHAR(60) NOT NULL,
+    gender VARCHAR NOT NULL,
+    dob DATE NOT NULL,
+    coach VARCHAR NOT NULL,
+    seatno INT NOT NULL,
+    CONSTRAINT travelers_pkey PRIMARY KEY (pnr, coach, seatno)
+);
+CREATE TABLE trfeedback
+(
+    userid VARCHAR(30) NOT NULL,
+    trainno VARCHAR(6) NOT NULL,
+    cleanliness INT,
+    punctuality INT,
+    tcktavlbl INT,
+    railfanning INT,
+    safety INT,
+    cmnt VARCHAR,
+    CONSTRAINT trfeedback_pkey PRIMARY KEY (userid, trainno)
+);
+CREATE TABLE trtype
+(
+    traintype VARCHAR PRIMARY KEY NOT NULL,
+    typename VARCHAR(25) NOT NULL,
+    fare INT NOT NULL
+);
+ALTER TABLE account ADD FOREIGN KEY (secqno) REFERENCES secquestions (qno);
+ALTER TABLE basefare ADD FOREIGN KEY (coachcode) REFERENCES coach (coachcode);
+CREATE UNIQUE INDEX coach_coachname_key ON coach (coachname);
+ALTER TABLE ruser ADD FOREIGN KEY (userid) REFERENCES account (userid);
+CREATE UNIQUE INDEX uniqueid ON ruser (id_type, id_no);
+CREATE UNIQUE INDEX ruser_mobile_key ON ruser (mobile);
+CREATE UNIQUE INDEX secquestions_question_key ON secquestions (question);
+ALTER TABLE stfeedback ADD FOREIGN KEY (userid) REFERENCES ;
+ALTER TABLE stfeedback ADD FOREIGN KEY (stid) REFERENCES station (stid);
+ALTER TABLE tickets ADD FOREIGN KEY (userid) REFERENCES ;
+ALTER TABLE tickets ADD FOREIGN KEY (trainno) REFERENCES train (trainno);
+ALTER TABLE tickets ADD FOREIGN KEY (sourcest) REFERENCES station (stid);
+ALTER TABLE tickets ADD FOREIGN KEY (destinationst) REFERENCES station (stid);
+ALTER TABLE tickets ADD FOREIGN KEY (coach) REFERENCES coach (coachcode);
+ALTER TABLE train ADD FOREIGN KEY (source) REFERENCES station (stid);
+ALTER TABLE train ADD FOREIGN KEY (destination) REFERENCES station (stid);
+ALTER TABLE train ADD FOREIGN KEY (traintype) REFERENCES trtype (traintype);
+ALTER TABLE trainstops ADD FOREIGN KEY (trainno) REFERENCES train (trainno);
+ALTER TABLE trainstops ADD FOREIGN KEY (stid) REFERENCES station (stid);
+ALTER TABLE travelers ADD FOREIGN KEY (pnr) REFERENCES tickets (pnr);
+ALTER TABLE trfeedback ADD FOREIGN KEY (userid) REFERENCES ;
+ALTER TABLE trfeedback ADD FOREIGN KEY (trainno) REFERENCES train (trainno);
+CREATE UNIQUE INDEX trtype_typename_key ON trtype (typename)CREATE FUNCTION availability(inp_trainno VARCHAR, dat DATE, coach_no CHTYPE) RETURNS INT4(0);
+CREATE FUNCTION fare_calculate(pnr_inp BPCHAR) RETURNS NUMERIC(0);
+CREATE FUNCTION n_days_availability(inp_trainno VARCHAR, n INT4, coach_no CHTYPE) RETURNS INT4(0);
+CREATE FUNCTION trains_between_stations(stn_code1 VARCHAR, stn_code2 VARCHAR) RETURNS INT4(0);

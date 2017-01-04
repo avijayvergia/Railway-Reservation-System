@@ -1,0 +1,673 @@
+1. Availability
+SET search_path TO railway_reservation_system;
+
+CREATE OR REPLACE FUNCTION availability(inp_trainno CHARACTER VARYING(7), dat DATE, coach_no chtype)
+  RETURNS INTEGER AS $BODY$
+DECLARE
+  rec          train%ROWTYPE;
+  booked       INTEGER :=0;
+  max_size     INTEGER :=0;
+  MULTIPLIER   INTEGER :=0;
+  VALIDITY_DAY BOOLEAN;
+  DAY_OF_WEEK  INTEGER;
+BEGIN
+
+  SELECT EXTRACT(DOW FROM date dat)
+  INTO DAY_OF_WEEK;
+
+  IF DAY_OF_WEEK = 0
+  THEN
+    SELECT (FREQ).SUN
+    INTO VALIDITY_DAY
+    FROM TRAIN
+    WHERE TRAINNO = INP_TRAINNO;
+  END IF;
+  IF DAY_OF_WEEK = 1
+  THEN
+    SELECT (FREQ).MON
+    INTO VALIDITY_DAY
+    FROM TRAIN
+    WHERE TRAINNO = INP_TRAINNO;
+  END IF;
+  IF DAY_OF_WEEK = 2
+  THEN
+    SELECT (FREQ).TUE
+    INTO VALIDITY_DAY
+    FROM TRAIN
+    WHERE TRAINNO = INP_TRAINNO;
+  END IF;
+  IF DAY_OF_WEEK = 3
+  THEN
+    SELECT (FREQ).WED
+    INTO VALIDITY_DAY
+    FROM TRAIN
+    WHERE TRAINNO = INP_TRAINNO;
+  END IF;
+  IF DAY_OF_WEEK = 4
+  THEN
+    SELECT (FREQ).THU
+    INTO VALIDITY_DAY
+    FROM TRAIN
+    WHERE TRAINNO = INP_TRAINNO;
+  END IF;
+  IF DAY_OF_WEEK = 5
+  THEN
+    SELECT (FREQ).FRI
+    INTO VALIDITY_DAY
+    FROM TRAIN
+    WHERE TRAINNO = INP_TRAINNO;
+  END IF;
+  IF DAY_OF_WEEK = 6
+  THEN
+    SELECT (FREQ).SAT
+    INTO VALIDITY_DAY
+    FROM TRAIN
+    WHERE TRAINNO = INP_TRAINNO;
+  END IF;
+
+  IF VALIDITY_DAY = FALSE
+  THEN
+    RAISE EXCEPTION 'TRAIN % DOESN''T RUN ON THE DATE YOU RESERVED THE TICKET WITH PNR %', INP_TRAINNO, TICKET.PNR;
+  END IF;
+
+  SELECT capacity
+  INTO max_size
+  FROM coach
+  WHERE coachcode = coach_no;
+
+  SELECT *
+  INTO rec
+  FROM TRAIN
+  WHERE TRAINNO = inp_trainno;
+
+  IF COACH_NO = 'UR'
+  THEN MULTIPLIER = rec.ur;
+  END IF;
+  IF COACH_NO = 'A2'
+  THEN MULTIPLIER = rec.a2;
+  END IF;
+  IF COACH_NO = 'A3'
+  THEN MULTIPLIER = rec.a3;
+  END IF;
+  IF COACH_NO = 'SL'
+  THEN MULTIPLIER = rec.sl;
+  END IF;
+  IF COACH_NO = 'FC'
+  THEN MULTIPLIER = rec.fc;
+  END IF;
+  IF COACH_NO = 'A1'
+  THEN MULTIPLIER = rec.a1;
+  END IF;
+  IF COACH_NO = 'CC'
+  THEN MULTIPLIER = rec.cc;
+  END IF;
+  IF COACH_NO = 'EX'
+  THEN MULTIPLIER = rec.ex;
+  END IF;
+
+  max_size = max_size * MULTIPLIER;
+
+  SELECT sum(total)
+  INTO booked
+  FROM tickets
+  WHERE trainno = inp_trainno AND jdate = dat AND coach = coach_no AND (STATUS = 'CONFIRM' OR STATUS = 'WAITING');
+  RAISE NOTICE '%', booked;
+  IF booked IS NULL
+  THEN RETURN max_size;
+  ELSE RETURN max_size - booked;
+  END IF;
+
+END;
+
+$BODY$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+2.  n days availability
+CREATE OR REPLACE FUNCTION railway_reservation_system.n_days_availability(inp_trainno CHARACTER VARYING, n INTEGER,
+                                                                          coach_no    railway_reservation_system.chtype)
+  RETURNS SETOF holder AS
+$BODY$
+DECLARE
+  --rec train%rowtype;
+  booked     INTEGER;
+  max_size   INTEGER := 0;
+  available  INTEGER :=0;
+  frequent   INTEGER :=0;
+  day_part   CHARACTER VARYING(10);
+  dat        DATE;
+  i          INTEGER :=0;
+  rec        holder%ROWTYPE;
+  rec2       train%ROWTYPE;
+  MULTIPLIER INTEGER :=0;
+BEGIN
+
+  SELECT capacity
+  INTO max_size
+  FROM coach
+  WHERE coachcode = coach_no;
+
+  SELECT *
+  INTO rec2
+  FROM TRAIN
+  WHERE TRAINNO = inp_trainno;
+
+  IF COACH_NO = 'UR'
+  THEN MULTIPLIER = rec2.ur;
+  END IF;
+  IF COACH_NO = 'A2'
+  THEN MULTIPLIER = rec2.a2;
+  END IF;
+  IF COACH_NO = 'A3'
+  THEN MULTIPLIER = rec2.a3;
+  END IF;
+  IF COACH_NO = 'SL'
+  THEN MULTIPLIER = rec2.sl;
+  END IF;
+  IF COACH_NO = 'FC'
+  THEN MULTIPLIER = rec2.fc;
+  END IF;
+  IF COACH_NO = 'A1'
+  THEN MULTIPLIER = rec2.a1;
+  END IF;
+  IF COACH_NO = 'CC'
+  THEN MULTIPLIER = rec2.cc;
+  END IF;
+  IF COACH_NO = 'EX'
+  THEN MULTIPLIER = rec2.ex;
+  END IF;
+
+  max_size = max_size * MULTIPLIER;
+
+  FOR i IN 0..n - 1
+  LOOP
+    SELECT CURRENT_DATE + i
+    INTO dat;
+    SELECT sum(total)
+    INTO booked
+    FROM tickets
+    WHERE trainno = inp_trainno AND jdate = dat AND coach = coach_no AND (STATUS = 'CONFIRM' OR STATUS = 'WAITING');
+    available = max_size - booked;
+    IF booked IS NULL
+    THEN available = max_size;
+    ELSE available = max_size - booked;
+    END IF;
+    SELECT
+      inp_trainno,
+      dat,
+      available
+    INTO rec;
+    RETURN NEXT rec;
+  END LOOP;
+END;
+
+$BODY$
+LANGUAGE plpgsql;
+
+
+
+
+3. trains between stations
+CREATE OR REPLACE FUNCTION trains_between_stations(stn_code1 CHARACTER VARYING, stn_code2 CHARACTER VARYING)
+  RETURNS INTEGER AS $BODY$
+DECLARE
+  rec  train%ROWTYPE;
+  rec2 trainstops%ROWTYPE;
+  i    INTEGER :=0;
+BEGIN
+  FOR rec IN SELECT train.*
+             FROM ((SELECT r1.trainno
+                    FROM trainstops AS r1
+                      JOIN trainstops AS r2
+                        ON r1.trainno = r2.trainno AND r1.stid = stn_code1 AND r2.stid = stn_code2 AND
+                           r1.distance < r2.distance) AS r NATURAL JOIN train)
+  LOOP
+    RETURN NEXT rec;
+  END LOOP;
+END;
+
+$BODY$ LANGUAGE plpgsql;
+
+
+
+4. Fare Calculation
+CREATE OR REPLACE FUNCTION fare_calculate(pnr_inp BPCHAR)
+  RETURNS ticket_fare AS $BODY$
+DECLARE
+  rec  RECORD;
+  rec2 RECORD;
+  rec3 ticket_fare;
+  dist numeric(7,2) :=0;
+  dist1 numeric(7,2):=0;
+  dist2 numeric(7,2):=0;
+  cal_fare numeric(9,2) :=0;
+  flag integer :=0;
+
+BEGIN
+
+  SELECT trainno,sourcest,destinationst,coach,total INTO rec FROM tickets
+  WHERE
+    pnr = pnr_inp;
+
+  SELECT distance INTO dist1 from trainstops
+  WHERE
+    trainno = rec.trainno AND stid = rec.sourcest;
+
+  raise notice '%', dist1;
+
+  SELECT distance INTO dist2 from trainstops
+  WHERE
+    trainno = rec.trainno AND stid = rec.destinationst;
+
+  raise notice '%' ,dist2;
+
+  IF dist1 IS NULL
+  THEN dist = dist2;
+  ELSE
+    dist = dist2-dist1;
+  END IF;
+
+  raise notice '%' ,dist;
+
+  select bfare,mdistance into rec2 from basefare where coachcode = rec.coach;
+
+  raise notice '%' ,rec2.bfare;
+  raise notice '%' ,rec2.mdistance;
+
+  IF dist <= rec2.mdistance THEN
+    cal_fare = rec2.bfare*rec.total;
+  ELSE
+    SELECT 1 INTO flag from train WHERE trainno = rec.trainno AND traintype = 'SF';
+    IF flag IS NULL THEN
+      SELECT (fare*dist+reservationchrg)*rec.total INTO cal_fare from coach
+      WHERE coachcode = rec.coach;
+    ELSE
+      SELECT (fare*dist+reservationchrg+superfastchrg)*rec.total INTO cal_fare from coach
+      WHERE coachcode = rec.coach;
+    END IF;
+  END IF;
+
+  raise notice '%' ,cal_fare;
+  rec3.trainno = rec.trainno;
+  rec3.source = rec.sourcest;
+  rec3.destination = rec.destinationst;
+  rec3.coach = rec.coach;
+  rec3.total = rec.total;
+  rec3.fare = cal_fare;
+
+  RETURN rec3;
+END;
+$BODY$ LANGUAGE plpgsql;
+
+
+
+
+5.  Waiting or not waiting stamp (Booking trigger)
+SET SEARCH_PATH TO RAILWAY_RESERVATION_SYSTEM;
+DROP TRIGGER BOOKING_TRIGGER
+ON TICKETS;
+DROP FUNCTION INSTRIG_FUNC();
+CREATE FUNCTION INSTRIG_FUNC()
+  RETURNS TRIGGER AS
+$$
+DECLARE
+  TOTAL_SEATS          INTEGER;
+  TICKET               TICKETS%ROWTYPE;
+  QUERY                VARCHAR(300);
+  COACH_CAPICITY       INTEGER;
+  BOOKED_SEATS         INTEGER;
+  TOTAL_COACH          INTEGER;
+  DAY_OF_WEEK          INTEGER;
+  VALIDITY_DAY         BOOLEAN;
+  JOURNEY_DATE         DATE;
+  SOURCE_DISTANCE      DECIMAL(7, 2);
+  DESTINATION_DISTANCE DECIMAL(7, 2);
+BEGIN
+  TOTAL_COACH := 0;
+  TOTAL_SEATS := 0;
+  COACH_CAPICITY := 0;
+  BOOKED_SEATS := 0;
+
+  FOR TICKET IN SELECT *
+                FROM TICKETS
+                WHERE STATUS IS NULL
+  LOOP
+
+    SELECT EXTRACT(DOW FROM date(TICKET.JDATE) :: DATE)
+    INTO DAY_OF_WEEK;
+
+    IF DAY_OF_WEEK = 0
+    THEN
+      SELECT (FREQ).SUN
+      INTO VALIDITY_DAY
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF DAY_OF_WEEK = 1
+    THEN
+      SELECT (FREQ).MON
+      INTO VALIDITY_DAY
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF DAY_OF_WEEK = 2
+    THEN
+      SELECT (FREQ).TUE
+      INTO VALIDITY_DAY
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF DAY_OF_WEEK = 3
+    THEN
+      SELECT (FREQ).WED
+      INTO VALIDITY_DAY
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF DAY_OF_WEEK = 4
+    THEN
+      SELECT (FREQ).THU
+      INTO VALIDITY_DAY
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF DAY_OF_WEEK = 5
+    THEN
+      SELECT (FREQ).FRI
+      INTO VALIDITY_DAY
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF DAY_OF_WEEK = 6
+    THEN
+      SELECT (FREQ).SAT
+      INTO VALIDITY_DAY
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+
+    IF VALIDITY_DAY = FALSE
+    THEN
+      RAISE EXCEPTION 'TRAIN % DOESN''T RUN ON THE DATE YOU RESERVED THE TICKET WITH PNR %', TICKET.TRAINNO, TICKET.PNR;
+    END IF;
+
+    IF TICKET.COACH = '2S'
+    THEN
+      SELECT S2
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF TICKET.COACH = 'EX'
+    THEN
+      SELECT EX
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF TICKET.COACH = 'FC'
+    THEN
+      SELECT FC
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF TICKET.COACH = 'CC'
+    THEN
+      SELECT CC
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF TICKET.COACH = 'A3'
+    THEN
+      SELECT A3
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF TICKET.COACH = 'A2'
+    THEN
+      SELECT A2
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF TICKET.COACH = 'A1'
+    THEN
+      SELECT A1
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+    IF TICKET.COACH = 'SL'
+    THEN
+      SELECT SL
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = TICKET.TRAINNO;
+    END IF;
+
+    SELECT CAPACITY
+    INTO COACH_CAPICITY
+    FROM COACH
+    WHERE COACHCODE = TICKET.COACH;
+    TOTAL_SEATS := TOTAL_COACH * COACH_CAPICITY;
+
+    IF (TOTAL_SEATS <= 0)
+    THEN
+      RAISE EXCEPTION 'INVALID COACH TYPE % FOR TRAIN % WITH PNR %', TICKET.COACH, TICKET.TRAINNO, TICKET.PNR;
+    END IF;
+
+    SELECT DISTANCE
+    INTO SOURCE_DISTANCE
+    FROM TRAINSTOPS
+    WHERE TICKET.TRAINNO = TRAINSTOPS.TRAINNO AND TICKET.SOURCEST = TRAINSTOPS.STID;
+    SELECT DISTANCE
+    INTO DESTINATION_DISTANCE
+    FROM TRAINSTOPS
+    WHERE TICKET.TRAINNO = TRAINSTOPS.TRAINNO AND TICKET.DESTINATIONST = TRAINSTOPS.STID;
+
+    SELECT SUM(TOTAL)
+    INTO BOOKED_SEATS
+    FROM (TICKETS
+      JOIN TRAINSTOPS AS R1 ON TICKETS.TRAINNO = R1.TRAINNO AND TICKETS.SOURCEST = R1.STID) JOIN TRAINSTOPS AS R2
+        ON TICKETS.TRAINNO = R2.TRAINNO AND TICKETS.DESTINATIONST = R2.STID
+    WHERE TICKETS.TRAINNO = TICKET.TRAINNO AND JDATE = TICKET.JDATE AND COACH = TICKET.COACH AND STATUS IS NOT NULL AND
+          STATUS != 'CANCEL' AND NOT (R2.DISTANCE <= SOURCE_DISTANCE OR DESTINATION_DISTANCE <= R1.DISTANCE);
+
+    IF (TOTAL_SEATS - BOOKED_SEATS < TICKET.TOTAL)
+    THEN
+      QUERY = 'UPDATE TICKETS SET STATUS = ''WAITING'' WHERE PNR = ''' || TICKET.PNR || '''';
+    ELSE
+      QUERY = 'UPDATE TICKETS SET STATUS = ''CONFIRM'' WHERE PNR = ''' || TICKET.PNR || '''';
+    END IF;
+    EXECUTE QUERY;
+  END LOOP;
+  RETURN NEW;
+END;
+$$
+LANGUAGE 'PLPGSQL';
+CREATE TRIGGER BOOKING_TRIGGER AFTER INSERT ON TICKETS FOR EACH STATEMENT EXECUTE PROCEDURE INSTRIG_FUNC();
+
+
+
+6. Cancel trigger
+SET search_path TO railway_reservation_system;
+DROP TRIGGER CANCEL_TRIGGER
+ON TICKETS;
+DROP FUNCTION CANCEL_TRIG_FUNC();
+CREATE FUNCTION CANCEL_TRIG_FUNC()
+  RETURNS TRIGGER AS
+$$
+DECLARE
+  QUERY                VARCHAR(300);
+  TOTAL_SEATS          INTEGER;
+  COACH_CAPICITY       INTEGER;
+  TOTAL_COACH          INTEGER;
+  BOOKED_SEATS         INTEGER;
+  TOTAL_AVLBL          INTEGER;
+  TICKET               RECORD;
+  NEWTICKET            RECORD;
+  NEWPNR               VARCHAR(20);
+  NEWCOACH             CHTYPE;
+  NEWTRAINNO           VARCHAR(10);
+  SOURCE_DISTANCE      DECIMAL(7, 2);
+  DESTINATION_DISTANCE DECIMAL(7, 2);
+BEGIN
+  IF TG_OP = 'INSERT'
+  THEN
+    RETURN NEW;
+  END IF;
+
+  IF (TG_OP = 'UPDATE')
+  THEN
+    SELECT *
+    INTO NEWTICKET
+    FROM TICKETS
+    WHERE STATUS = 'CAN';
+
+    IF NEWTICKET.JDATE <= NOW()
+    THEN
+      RAISE EXCEPTION 'YOU CAN''T CANCEL THE TICKET WITH JOURNEY DATE LESS THAN OR EQUAL TO TODAY''S DATE';
+      RETURN NEW;
+    END IF;
+
+    NEWPNR := NEWTICKET.PNR;
+    IF NEWPNR IS NULL
+    THEN
+      RETURN NEW;
+    END IF;
+
+    QUERY = 'UPDATE TICKETS SET STATUS = ''CANCEL'' WHERE PNR = ''' || NEWTICKET.PNR || '''';
+    EXECUTE QUERY;
+
+    NEWTRAINNO := NEWTICKET.TRAINNO;
+    NEWCOACH := NEWTICKET.COACH;
+    IF NEWTRAINNO IS NULL OR NEWCOACH IS NULL
+    THEN
+      RETURN NEW;
+    END IF;
+
+    IF NEWCOACH = 'UR'
+    THEN
+      SELECT UR
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+    IF NEWCOACH = '2S'
+    THEN
+      SELECT S2
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+    IF NEWCOACH = 'EX'
+    THEN
+      SELECT EX
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+    IF NEWCOACH = 'FC'
+    THEN
+      SELECT FC
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+    IF NEWCOACH = 'CC'
+    THEN
+      SELECT CC
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+    IF NEWCOACH = 'A3'
+    THEN
+      SELECT A3
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+    IF NEWCOACH = 'A2'
+    THEN
+      SELECT A2
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+    IF NEWCOACH = 'A1'
+    THEN
+      SELECT A1
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+    IF NEWCOACH = 'SL'
+    THEN
+      SELECT SL
+      INTO TOTAL_COACH
+      FROM TRAIN
+      WHERE TRAINNO = NEWTRAINNO;
+    END IF;
+
+    SELECT CAPACITY
+    INTO COACH_CAPICITY
+    FROM COACH
+    WHERE COACHCODE = NEWCOACH;
+    TOTAL_SEATS := TOTAL_COACH * COACH_CAPICITY;
+
+    << UPDATE_LOOP >>
+    FOR TICKET IN SELECT *
+                  FROM TICKETS
+                  WHERE TRAINNO = NEWTRAINNO AND JDATE = NEWTICKET.JDATE AND STATUS = 'WAITING' AND
+                        COACH = NEWCOACH :: CHTYPE
+                  ORDER BY TIME_STAMP
+    LOOP
+
+      SELECT DISTANCE
+      INTO SOURCE_DISTANCE
+      FROM TRAINSTOPS
+      WHERE TICKET.TRAINNO = TRAINSTOPS.TRAINNO AND TICKET.SOURCEST = TRAINSTOPS.STID;
+      SELECT DISTANCE
+      INTO DESTINATION_DISTANCE
+      FROM TRAINSTOPS
+      WHERE TICKET.TRAINNO = TRAINSTOPS.TRAINNO AND TICKET.DESTINATIONST = TRAINSTOPS.STID;
+
+      SELECT SUM(TOTAL)
+      INTO BOOKED_SEATS
+      FROM (TICKETS
+        JOIN TRAINSTOPS AS R1 ON TICKETS.TRAINNO = R1.TRAINNO AND TICKETS.SOURCEST = R1.STID) JOIN TRAINSTOPS AS R2
+          ON TICKETS.TRAINNO = R2.TRAINNO AND TICKETS.DESTINATIONST = R2.STID
+      WHERE
+        TICKETS.TRAINNO = NEWTRAINNO AND JDATE = NEWTICKET.JDATE AND COACH = NEWCOACH :: CHTYPE AND STATUS IS NOT NULL
+        AND STATUS != 'CANCEL' AND STATUS != 'WAITING' AND
+        NOT (R2.DISTANCE <= SOURCE_DISTANCE OR DESTINATION_DISTANCE <= R1.DISTANCE);
+
+      IF BOOKED_SEATS IS NULL
+      THEN
+        BOOKED_SEATS := 0;
+      END IF;
+
+      TOTAL_AVLBL := TOTAL_SEATS - BOOKED_SEATS;
+
+      IF TICKET.TOTAL < TOTAL_AVLBL
+      THEN
+        QUERY = 'UPDATE TICKETS SET STATUS = ''CONFIRM'' WHERE PNR = ''' || TICKET.PNR || '''';
+        EXECUTE QUERY;
+      END IF;
+    END LOOP;
+  END IF;
+  RETURN NEW;
+END;
+$$
+LANGUAGE 'PLPGSQL';
+CREATE TRIGGER CANCEL_TRIGGER AFTER UPDATE OR INSERT ON TICKETS FOR EACH STATEMENT EXECUTE PROCEDURE CANCEL_TRIG_FUNC();
